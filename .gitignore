@@ -1,3 +1,6 @@
+# Custom Docker token -- this is a secret so don't git it
+token.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

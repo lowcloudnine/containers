@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-NAME="vscode"
-INTERNAL_PORT="3000"
-EXTERNAL_PORT="3000"
+NAME="doundry"
+INTERNAL_PORT="8886"
+EXTERNAL_PORT="8886"
 IMAGE="my_base"
 PROJ_DIR="/mnt/f/Projects"
 

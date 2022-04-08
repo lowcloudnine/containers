@@ -1,0 +1,15 @@
+---
+version: "2.1"
+services:
+  doundry:
+    command: openvscode-server --port 3000 --host 0.0.0.0 --without-connection-token
+    container_name: doundry
+    environment:
+      - TZ=Americas/New_York
+    image: doundry
+    ports:
+      - 8886:3000
+    restart: unless-stopped
+    volumes:
+      - /mnt/f/projects:/projects
+      - /var/run/docker.sock:/var/run/docker.sock

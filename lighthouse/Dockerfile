@@ -1,6 +1,5 @@
 FROM redhat/ubi8:latest
 
-
 RUN \
     # Update the System
     dnf -y update && \

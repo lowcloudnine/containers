@@ -57,7 +57,13 @@ RUN \
     echo "devloper:devloper" | chpasswd  && \
     usermod -aG wheel devloper && \
     # This doesn't seem to work to allow for non-sudo docker :(
-    usermod -aG docker devloper
+    usermod -aG docker devloper && \
+    \
+    # Clean up
+    dnf remove unzip -y && \
+    dnf clean all && \
+    rm -f /tmp/*.zip && \
+    rm -rf /var/cache/*
 
 # Switch to the devloper user and then use it to install user specific things
 USER devloper
@@ -79,7 +85,7 @@ RUN \
     openvscode-server --install-extension alefragnani.project-manager && \
     # openvscode-server --install-extension formulahendry.code-runner && \
     # ---- Themes
-    openvscode-server --install-extensionrokoroku.vscode-theme-darcula && \
+    openvscode-server --install-extension rokoroku.vscode-theme-darcula && \
     openvscode-server --install-extension Equinusocio.vsc-community-material-theme && \
     # =========================================================================
     \

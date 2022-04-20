@@ -13,6 +13,7 @@ to work as the entry point for a docker container.
 # ---- System
 import argparse
 import json
+import os
 import subprocess
 import sys
 
@@ -21,52 +22,24 @@ import sys
 # ----------------------------------------------------------------------------
 
 
-def display_help():
-    """Provide a helpful well formatted message for users."""
-    return """
-Welcome to the "lighthouse container"!
-
-The goal is to be a simple interface to automate generating tests from
-Google's Lighthouse testing/scoring application.  The container prints a
-single integer to stdout from a given URL and category of tests to run.
-
-URL should be the full URL including protocol examples:
-- http://google.com
-- https://redhat.com
-
-The category must be one of:
-- accessibility
-- best-practices
-- performance
-- pwa
-- seo
-
-Example usage:
-
-CLI with output:
-- $ docker run lighthouse -c accessibility -u https://redhat.com
-  91
-- $ docker run lighthouse --category best-practices --url https://redhat.com
-  75
-- $ docker run lighthouse -c accessibility -u https://redhat.com --report
-
-In a bash script:
-- SCORE=$(docker run lighthouse -c acessibility -u https://redhat.com)
-"""
-
-
 def lighthouse(url, category, report):
     """Use lighthouse to generate an output file."""
     # All the options for lighthouse can be found at:
     #  https://github.com/GoogleChrome/lighthouse#cli-options
+    chrome_flags = " ".join([
+        "--headless",
+        "--window-size=821,843",
+        "--no-sandbox",
+        "--enable-javascript",
+        "--ignore-certificate-errors",  # ignore https certificate issues
+    ])
+
     lighthouse_args = [
         url,
         # chrome flags are needed to fake out sites as headless often makes them
         # not provide the data needed
-        '--chrome-flags="--headless --window-size=821,843 --no-sandbox --enable-javascript"',
+        f'--chrome-flags="{chrome_flags}"',
         f'--only-categories "{category}"',
-        '--output json',
-        '--output-path /output/output.json',
         '--no-enable-error-reporting',  # this keeps Google's request for reports quiet
                                         # and avoids the associated 20 second delay
         '--quiet'  # Keeps the lighthouse output quiet comment out if you are debugging
@@ -75,6 +48,9 @@ def lighthouse(url, category, report):
     if report:
         lighthouse_args.append('--output html')
         lighthouse_args.append('--output-path /output/output.html')
+    else:
+        lighthouse_args.append('--output json')
+        lighthouse_args.append('--output-path /output/output.json')
 
     subprocess.run(
         " ".join(["lighthouse", *lighthouse_args]),
@@ -91,12 +67,18 @@ def parse_score(category, report):
         output = json.load(report)
     score = int(float(output['categories'][category]['score']) * 100)
 
+    # Clean up the file so if there's a volume mount, there's no clutter
+    os.remove("/output/output.json")
+
     return str(score)
 
 
 def parse_args():
     """Return a namespace of the parsed arguments for the program."""
-    parser = argparse.ArgumentParser(description='Run Google Lighthouse with options.')
+    parser = argparse.ArgumentParser(
+        prog="docker run [various docker options] lighthouse",
+        description='Run Google Lighthouse inside a docker container with some options.'
+    )
     parser.add_argument(
         '--category', '-c',
         type=str,
@@ -108,27 +90,30 @@ def parse_args():
             "pwa",
             "seo"
         ],
-        help="The category of 'test' to run, defaults to accessibility."
+        help="The category/type of test to run, defaults to accessibility."
     )
     parser.add_argument(
         '--url', '-u',
         type=str,
-        default='https://www.fbi.gov',
+        default='https://python.org',
         help="A valid URL to a web site to test must start with a valid protocol " \
-             "of http:// or https://"
+             "of http:// or https://.  Defaults to https://www.python.org"
     )
     parser.add_argument(
         '--report', '-r',
         action='store_true',
-        help="Generate/Output the full HTML report to a file in addition to " \
-             "printing a single value."
+        help="Generate/Output the full HTML report to a file.  If this flag/option " \
+             "is set only the html file will be generated in the directory mounted " \
+             "with the docker volume flag, i.e. -v /home/user/reports:/output " \
+             "as output.html.  If the flag is not given a single number, the " \
+             "result of the given test which is between 0 and 100 will be piped " \
+             "to stdout."
     )
 
     all_args = parser.parse_args()
     if not(all_args.url.startswith("http://")
             or all_args.url.startswith("https://")):
-        print("ERROR: Please provide a valid URL.")
-        print(display_help())
+        print("ERROR: Provide a valid URL, it must start with: http:// or https://")
         sys.exit(1)
 
     return all_args
@@ -142,8 +127,10 @@ def main(category, url, report):
     """Run as the entrypoint and ensure the input is correct."""
     # Run Google Lighthouse for the given category and URL
     lighthouse(url, category, report)
-    # print(parse_score(category))  # <-- print the score to stdout
-
+    if report:
+        print("The results are in: ./output.html")
+    else:
+        print(parse_score(category, report))  # <-- print the score to stdout
 
 # ----------------------------------------------------------------------------
 # Name

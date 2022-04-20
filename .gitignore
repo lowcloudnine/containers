@@ -1,6 +1,10 @@
 # Custom Docker token -- this is a secret so don't git it
 token.txt
 
+# Output files for testing will be:
+output.json
+output.html
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

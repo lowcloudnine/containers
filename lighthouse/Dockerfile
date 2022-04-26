@@ -17,6 +17,9 @@ RUN \
     dnf -y install nodejs --nogpgcheck && \
     npm install -g lighthouse && \
     \
+    # Install boto3 in Python 3 for using S3 to store reports \
+    pip3 install boto3 && \
+    \
     # Add User
     useradd -m lighthouse && \
     echo "lighthouse:lighthouse" | chpasswd && \
